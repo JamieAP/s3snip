@@ -59,26 +59,26 @@ func readCloserToString(reader io.ReadCloser) string {
 }
 
 func takeScreenshot() []byte {
-  err := exec.Command("screencapture", "-s", "/tmp/screenshot.png").Run()
-  if err != nil {
-    log.Fatal(err)
-  }
+	err := exec.Command("screencapture", "-s", "/tmp/screenshot.png").Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  file, err := ioutil.ReadFile("/tmp/screenshot.png")
-  if err != nil {
-    log.Fatal(err)
-  }
-  return file
+	file, err := ioutil.ReadFile("/tmp/screenshot.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
 }
 
 func main() {
 	conf := readConfig()
 
-  screenshot := takeScreenshot()
+	screenshot := takeScreenshot()
 	hashBytes := sha1.Sum(screenshot)
 	hashString := hex.EncodeToString(hashBytes[:])
 
-  awsKeys := s3gof3r.Keys{
+	awsKeys := s3gof3r.Keys{
 		AccessKey:     conf.AwsAccessKey,
 		SecretKey:     conf.AwsSecretKey,
 		SecurityToken: "",
