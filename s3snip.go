@@ -19,7 +19,7 @@ import (
 )
 
 const s3UrlTemplate = "https://s3-%s.amazonaws.com/%s/%s"
-const bitlyBase = "https://api-ssl.bitly.com/v3/shorten?access_token=%s&longUrl=%s.png&format=txt&domain=j.mp"
+const bitlyUrlTemplate = "https://api-ssl.bitly.com/v3/shorten?access_token=%s&longUrl=%s.png&format=txt&domain=j.mp"
 
 type config struct {
 	AwsRegion        string `json:"awsRegion"`
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	s3Url := fmt.Sprintf(s3UrlTemplate, conf.AwsRegion, conf.AwsBucket, hashString)
-	bitlyUrl := fmt.Sprintf(bitlyBase, conf.BitlyAccessToken, s3Url)
+	bitlyUrl := fmt.Sprintf(bitlyUrlTemplate, conf.BitlyAccessToken, s3Url)
 
 	resp, err := http.Get(bitlyUrl)
 	if err != nil {
