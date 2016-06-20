@@ -37,3 +37,5 @@ Your S3 bucket should have the following policy if you want screenshots to autom
 ```
 
 Tested only on OSX using `go1.6.2 darwin/amd64`.
+
+Automator can be used to create a service/application for S3Snip and a keyboard shortcut can be bound to trigger it.
