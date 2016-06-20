@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 
 	"github.com/atotto/clipboard"
 	"github.com/rlmcpherson/s3gof3r"
@@ -28,8 +29,16 @@ type config struct {
 	BitlyAccessToken string `json:"bitlyAccessToken"`
 }
 
+func getUserHome() string {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return usr.HomeDir
+}
+
 func readConfig() config {
-	confFile, err := os.Open("/Users/jamie/.screensnip/conf.json")
+	confFile, err := os.Open(getUserHome() + "/.s3snip/conf.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,51 +58,57 @@ func readCloserToString(reader io.ReadCloser) string {
 	return string
 }
 
+func takeScreenshot() []byte {
+  err := exec.Command("screencapture", "-s", "/tmp/screenshot.png").Run()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  file, err := ioutil.ReadFile("/tmp/screenshot.png")
+  if err != nil {
+    log.Fatal(err)
+  }
+  return file
+}
+
 func main() {
 	conf := readConfig()
 
-	err := exec.Command("screencapture", "-s", "/tmp/screenshot.png").Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+  screenshot := takeScreenshot()
+	hashBytes := sha1.Sum(screenshot)
+	hashString := hex.EncodeToString(hashBytes[:])
 
-	file, err := ioutil.ReadFile("/tmp/screenshot.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	keys := s3gof3r.Keys{
+  awsKeys := s3gof3r.Keys{
 		AccessKey:     conf.AwsAccessKey,
 		SecretKey:     conf.AwsSecretKey,
 		SecurityToken: "",
 	}
 
-	s3 := s3gof3r.New(fmt.Sprintf("s3-%s.amazonaws.com", conf.AwsRegion), keys)
+	s3 := s3gof3r.New(fmt.Sprintf("s3-%s.amazonaws.com", conf.AwsRegion), awsKeys)
 	bucket := s3.Bucket(conf.AwsBucket)
-
-	hashBytes := sha1.Sum(file)
-	hashString := hex.EncodeToString(hashBytes[:])
-
 	header := make(http.Header)
 	header.Add("Content-Type", "image/png")
+
 	writer, err := bucket.PutWriter(hashString+".png", header, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if _, err = io.Copy(writer, bytes.NewBuffer(file)); err != nil {
+	if _, err = io.Copy(writer, bytes.NewBuffer(screenshot)); err != nil {
 		log.Fatal(err)
 	}
 
-	if err = writer.Close(); err != nil {
+	if err := writer.Close(); err != nil {
 		log.Fatal(err)
 	}
 
 	s3Url := fmt.Sprintf(s3UrlTemplate, conf.AwsRegion, conf.AwsBucket, hashString)
 	bitlyUrl := fmt.Sprintf(bitlyBase, conf.BitlyAccessToken, s3Url)
+
 	resp, err := http.Get(bitlyUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	clipboard.WriteAll(readCloserToString(resp.Body))
 }
