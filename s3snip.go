@@ -98,7 +98,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := writer.Close(); err != nil {
+	if err = writer.Close(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -108,6 +108,9 @@ func main() {
 	resp, err := http.Get(bitlyUrl)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		log.Fatal("Non-200 response from Bitly")
 	}
 
 	clipboard.WriteAll(readCloserToString(resp.Body))
