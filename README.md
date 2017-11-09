@@ -1,6 +1,6 @@
 # S3Snip
 
-A quick and dirty tool for taking screenshots, uploading them to S3 and putting a shortened URL on the clipboard.
+A quick and dirty tool for taking screenshots, uploading them to S3 and putting a URL on the clipboard.
 Written partly as a way to learn Go, so you know, might break in weird ways. It aims to be a private/personal replacement for puush.me.
 
 Requires a dir `.s3snip` in the users home directory and a `conf.json` within.
@@ -12,8 +12,7 @@ Requires a dir `.s3snip` in the users home directory and a `conf.json` within.
 	"awsRegion" : "REGION",
 	"awsSecretKey" : "SECRET",
 	"awsAccessKey" : "KEY",
-	"awsBucket" : "BUCKET",
-	"bitlyAccessToken" : "TOKEN"
+	"awsBucket" : "BUCKET"
 }
 ```
 

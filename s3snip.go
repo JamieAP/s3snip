@@ -18,8 +18,7 @@ import (
 	"github.com/rlmcpherson/s3gof3r"
 )
 
-const s3UrlTemplate = "https://s3-%s.amazonaws.com/%s/%s"
-const bitlyUrlTemplate = "https://api-ssl.bitly.com/v3/shorten?access_token=%s&longUrl=%s.png&format=txt&domain=j.mp"
+const s3UrlTemplate = "https://s3-%s.amazonaws.com/%s/%s.png"
 
 type config struct {
 	AwsRegion        string `json:"awsRegion"`
@@ -49,13 +48,6 @@ func readConfig() config {
 		log.Fatal(err)
 	}
 	return config
-}
-
-func readCloserToString(reader io.ReadCloser) string {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(reader)
-	string := buf.String()
-	return string
 }
 
 func takeScreenshot() []byte {
@@ -103,15 +95,6 @@ func main() {
 	}
 
 	s3Url := fmt.Sprintf(s3UrlTemplate, conf.AwsRegion, conf.AwsBucket, hashString)
-	bitlyUrl := fmt.Sprintf(bitlyUrlTemplate, conf.BitlyAccessToken, s3Url)
 
-	resp, err := http.Get(bitlyUrl)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if resp.StatusCode != 200 {
-		log.Fatal("Non-200 response from Bitly")
-	}
-
-	clipboard.WriteAll(readCloserToString(resp.Body))
+	clipboard.WriteAll(s3Url)
 }
