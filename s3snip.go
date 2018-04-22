@@ -11,11 +11,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/user"
 
 	"github.com/atotto/clipboard"
 	"github.com/rlmcpherson/s3gof3r"
+	"runtime"
+	"os/exec"
+	"path"
 )
 
 const s3UrlTemplate = "https://s3-%s.amazonaws.com/%s/%s.png"
@@ -31,7 +33,7 @@ type config struct {
 func getUserHome() string {
 	usr, err := user.Current()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	return usr.HomeDir
 }
@@ -39,28 +41,45 @@ func getUserHome() string {
 func readConfig() config {
 	confFile, err := os.Open(getUserHome() + "/.s3snip/conf.json")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	config := config{}
 	decoder := json.NewDecoder(confFile)
 	decodeErr := decoder.Decode(&config)
 	if decodeErr != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	return config
 }
 
 func takeScreenshot() []byte {
-	err := exec.Command("screencapture", "-s", "/tmp/screenshot.png").Run()
+	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
+	}
+	defer os.Remove(tempDir)
+
+	ssPath := path.Join(tempDir, "screenshot.png")
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		err := exec.Command("screencapture", "-s", ssPath).Run()
+		if err != nil {
+			log.Panic(err)
+		}
+	case "linux":
+		err := exec.Command("scrot", "-s", ssPath).Run()
+		if err != nil {
+			log.Panic(err)
+		}
+	default:
+		log.Panicf("unsupported os %s", os)
 	}
 
-	file, err := ioutil.ReadFile("/tmp/screenshot.png")
+	ssBytes, err := ioutil.ReadFile(ssPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
-	return file
+	return ssBytes
 }
 
 func main() {
@@ -83,15 +102,15 @@ func main() {
 
 	writer, err := bucket.PutWriter(hashString+".png", header, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	if _, err = io.Copy(writer, bytes.NewBuffer(screenshot)); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	if err = writer.Close(); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	s3Url := fmt.Sprintf(s3UrlTemplate, conf.AwsRegion, conf.AwsBucket, hashString)
